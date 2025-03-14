@@ -2,7 +2,9 @@
 
 import Sidebar from "@/components/layout/Sidebar";
 import { useRouter } from "next/navigation";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, useCallback } from "react";
+import { useDepositNotification } from "@/components/notifications/DepositNotification";
+import { useDepositNotifications, DepositNotification } from "@/lib/socket";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -13,11 +15,40 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // 입금 알림 훅 사용
+  const { showDepositNotification } = useDepositNotification();
+  
+  // 입금 알림 처리 콜백
+  const handleDepositNotification = useCallback((data: DepositNotification) => {
+    console.log("입금 알림 수신:", data);
+    showDepositNotification(data);
+  }, [showDepositNotification]);
+  
+  // 소켓 연결 및 입금 알림 구독
+  const { notifications } = useDepositNotifications(handleDepositNotification);
 
   // 클라이언트 사이드 렌더링 확인
   useEffect(() => {
     setIsClient(true);
     console.log("대시보드 레이아웃 마운트됨");
+
+    // 화면 크기에 따라 사이드바 상태 설정
+    const handleResize = () => {
+      setIsSidebarCollapsed(window.innerWidth < 1280);
+    };
+
+    // 초기 화면 크기 확인
+    handleResize();
+
+    // 화면 크기 변경 이벤트 리스너 등록
+    window.addEventListener('resize', handleResize);
+    
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -58,6 +89,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }, [router, isClient]);
 
+  // 사이드바 상태 변경 함수
+  const handleSidebarToggle = (collapsed: boolean) => {
+    setIsSidebarCollapsed(collapsed);
+  };
+
   // 클라이언트 사이드 렌더링 전이거나 로딩 중인 경우
   if (!isClient || isLoading) {
     return (
@@ -83,11 +119,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-      <div className="flex-1">
-        <div className="p-6">{children}</div>
-      </div>
+    <div className="flex min-h-screen bg-gray-100 overflow-hidden">
+      <Sidebar onToggle={handleSidebarToggle} isCollapsed={isSidebarCollapsed} />
+      <main 
+        className={`flex-1 transition-all duration-300 overflow-x-hidden
+          ${isSidebarCollapsed ? 'ml-16 pr-4' : 'ml-64'}`}
+      >
+        <div className="p-4 md:p-6">{children}</div>
+      </main>
     </div>
   );
 }

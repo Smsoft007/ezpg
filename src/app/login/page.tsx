@@ -195,138 +195,107 @@ export default function LoginPage() {
   // 클라이언트 사이드 렌더링 전에는 로딩 표시
   if (!isClient) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0f1e]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-400"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0f1e] to-[#1a1f3e]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* 고급 배경 효과 */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a]">
-        {/* 애니메이션 효과 레이어 */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 left-0 w-full h-full bg-[url('/images/circuit-pattern.svg')] bg-repeat opacity-10"></div>
-          <div className="absolute top-0 left-0 w-full h-full bg-[url('/images/digital-bg.svg')] bg-repeat opacity-15"></div>
-        </div>
-
-        {/* 그라데이션 오버레이 */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/30 via-blue-900/20 to-cyan-900/30"></div>
-
-        {/* 빛나는 원형 효과 */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-[100px] opacity-20 animate-pulse"></div>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-[#0a1022] via-[#141b38] to-[#0c1a36]">
+      {/* 배경 효과 */}
+      <div className="absolute inset-0 z-0">
+        {/* 그라데이션 배경 */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-blue-900/20 to-cyan-900/20"></div>
+        
+        {/* 빛나는 효과 */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600 rounded-full filter blur-[120px] opacity-20 animate-pulse"></div>
         <div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full filter blur-[100px] opacity-20 animate-pulse"
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600 rounded-full filter blur-[120px] opacity-20 animate-pulse"
           style={{ animationDelay: "1s" }}
         ></div>
         <div
-          className="absolute top-1/2 right-1/3 w-64 h-64 bg-cyan-500 rounded-full filter blur-[80px] opacity-10 animate-pulse"
+          className="absolute top-1/2 right-1/3 w-64 h-64 bg-cyan-600 rounded-full filter blur-[100px] opacity-20 animate-pulse"
           style={{ animationDelay: "2s" }}
         ></div>
+        
+        {/* 패턴 오버레이 */}
+        <div className="absolute inset-0 opacity-10 bg-[url('/images/grid-pattern.svg')] bg-repeat"></div>
       </div>
 
-      {/* 데이터 흐름 애니메이션 */}
+      {/* 움직이는 파티클 효과 */}
       <div className="absolute inset-0 z-1 overflow-hidden opacity-20">
-        <div className="data-flow-animation"></div>
-      </div>
-
-      {/* 보안 시각화 요소 */}
-      <div className="absolute inset-0 z-1 overflow-hidden">
-        <div
-          className="absolute top-1/4 left-1/2 w-1 h-1 bg-cyan-400 rounded-full animate-ping"
-          style={{ animationDuration: "3s" }}
-        ></div>
-        <div
-          className="absolute top-3/4 left-1/4 w-1 h-1 bg-blue-400 rounded-full animate-ping"
-          style={{ animationDuration: "4s", animationDelay: "1s" }}
-        ></div>
-        <div
-          className="absolute top-1/3 right-1/4 w-1 h-1 bg-purple-400 rounded-full animate-ping"
-          style={{ animationDuration: "5s", animationDelay: "0.5s" }}
-        ></div>
-        <div
-          className="absolute top-2/3 right-1/3 w-1 h-1 bg-cyan-400 rounded-full animate-ping"
-          style={{ animationDuration: "4.5s", animationDelay: "1.5s" }}
-        ></div>
+        <div className="particles-container">
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div 
+              key={i} 
+              className="particle bg-white rounded-full absolute"
+              style={{
+                width: `${Math.random() * 4 + 1}px`,
+                height: `${Math.random() * 4 + 1}px`,
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                opacity: Math.random() * 0.5 + 0.3,
+                animation: `floatParticle ${Math.random() * 10 + 10}s linear infinite`,
+                animationDelay: `${Math.random() * 5}s`
+              }}
+            ></div>
+          ))}
+        </div>
       </div>
 
       {/* 로그인 카드 */}
-      <div className="z-10 backdrop-blur-xl bg-white/10 p-8 rounded-xl shadow-2xl w-full max-w-md border border-white/20 relative">
-        {/* 보안 아이콘 */}
+      <div className="z-10 backdrop-blur-xl bg-white/10 p-8 rounded-xl shadow-2xl w-full max-w-md border border-white/20 relative transition-all duration-300 hover:shadow-cyan-900/20 hover:border-white/30 mx-4">
+        {/* 로고 아이콘 */}
         <div
-          className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-full shadow-lg"
-          style={{ animation: "pulse 2s infinite" }}
+          className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-cyan-600 to-blue-600 p-4 rounded-full shadow-lg shadow-cyan-900/30"
         >
-          <img src="/images/security-icon.svg" className="h-6 w-6 text-white" alt="Security" />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
         </div>
 
-        {/* 암호화 시각화 */}
-        <div className="absolute -right-3 top-1/4 w-6 h-24 overflow-hidden opacity-70">
-          <div className="encryption-code text-[8px] text-cyan-400 font-mono">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="opacity-70" style={{ animationDelay: `${i * 0.2}s` }}>
-                {Math.random().toString(36).substring(2, 5)}
-              </div>
-            ))}
-          </div>
+        <div className="text-center mb-8 mt-4">
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">EzPG</h1>
+          <p className="text-cyan-200 mt-2 text-sm">안전하고 빠른 전자결제 시스템</p>
         </div>
 
-        {/* 암호화 시각화 (왼쪽) */}
-        <div className="absolute -left-3 top-2/4 w-6 h-24 overflow-hidden opacity-70">
-          <div className="encryption-code text-[8px] text-blue-400 font-mono">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="opacity-70" style={{ animationDelay: `${i * 0.15}s` }}>
-                {Math.random().toString(36).substring(2, 5)}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="text-center mb-6 mt-2">
-          <h1 className="text-3xl font-bold gradient-text">EzPG</h1>
-          <p className="text-cyan-200 mt-2">전자결제 시스템</p>
-        </div>
-
-        {/* 빠른 전송 시스템 & 보안 강조 메시지 */}
-        <div className="mb-6 text-center">
-          <div className="flex items-center justify-center space-x-2 mb-2">
-            <img
-              src="/images/fast-transaction.svg"
-              className="h-4 w-4 text-cyan-400"
-              alt="Fast Transaction"
-            />
-            <p className="text-xs text-cyan-300 font-medium">빠른 전송 시스템</p>
-          </div>
-          <div className="transaction-speed" title="빠른 거래 속도"></div>
-          <div className="flex items-center justify-center space-x-2 mt-2">
-            <div className="security-shield">
-              <img
-                src="/images/security-icon.svg"
-                className="h-4 w-4 text-cyan-400"
-                alt="Security"
-              />
+        {/* 보안 및 속도 표시 */}
+        <div className="mb-6 flex justify-center space-x-6">
+          <div className="flex flex-col items-center">
+            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-cyan-900/30 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
             </div>
-            <p className="text-xs text-cyan-300 font-medium">보안 암호화 최적화</p>
+            <p className="text-xs text-cyan-300 font-medium">보안 최적화</p>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-900/30 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <p className="text-xs text-blue-300 font-medium">빠른 처리 속도</p>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-900/30 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-900/30 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg mb-6 animate-pulse">
             <span className="block sm:inline text-sm">{error}</span>
           </div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label htmlFor="userId" className="block text-cyan-100 text-sm font-medium mb-2">
+          <div className="space-y-2">
+            <label htmlFor="userId" className="block text-cyan-100 text-sm font-medium">
               아이디
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-cyan-500 group-hover:text-cyan-400 transition-colors duration-200">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-cyan-400"
+                  className="h-5 w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -342,7 +311,7 @@ export default function LoginPage() {
               <input
                 type="text"
                 id="userId"
-                className="bg-white/5 border border-white/10 text-white placeholder-cyan-200/50 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full pl-10 p-2.5 transition-all duration-200 hover:bg-white/10"
+                className="bg-white/5 border border-white/10 text-white placeholder-cyan-200/50 text-sm rounded-lg focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 block w-full pl-10 p-3 transition-all duration-200 hover:bg-white/10 backdrop-blur-sm"
                 placeholder="아이디를 입력하세요"
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
@@ -350,15 +319,15 @@ export default function LoginPage() {
               />
             </div>
           </div>
-          <div>
-            <label htmlFor="password" className="block text-cyan-100 text-sm font-medium mb-2">
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-cyan-100 text-sm font-medium">
               비밀번호
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-cyan-500 group-hover:text-cyan-400 transition-colors duration-200">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-cyan-400"
+                  className="h-5 w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -374,7 +343,7 @@ export default function LoginPage() {
               <input
                 type="password"
                 id="password"
-                className="bg-white/5 border border-white/10 text-white placeholder-cyan-200/50 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full pl-10 p-2.5 transition-all duration-200 hover:bg-white/10"
+                className="bg-white/5 border border-white/10 text-white placeholder-cyan-200/50 text-sm rounded-lg focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 block w-full pl-10 p-3 transition-all duration-200 hover:bg-white/10 backdrop-blur-sm"
                 placeholder="비밀번호를 입력하세요"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -384,9 +353,7 @@ export default function LoginPage() {
           </div>
           <div>
             <button
-              className={`w-full text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 focus:ring-4 focus:ring-cyan-300/50 font-medium rounded-lg text-sm px-5 py-3 text-center transition-all duration-300 transform hover:scale-[1.02] fast-transaction ${
-                isLoading ? "opacity-70 cursor-not-allowed" : ""
-              }`}
+              className={`w-full text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 focus:ring-4 focus:ring-cyan-500/30 font-medium rounded-lg text-sm px-5 py-3.5 text-center transition-all duration-300 transform hover:scale-[1.02] shadow-lg shadow-cyan-900/20 ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
               type="submit"
               disabled={isLoading}
             >
@@ -440,21 +407,37 @@ export default function LoginPage() {
         <div className="mt-8 text-center">
           <div className="inline-flex items-center justify-center w-full">
             <hr className="w-full h-px my-4 bg-white/10 border-0" />
-            <span className="absolute px-3 text-xs font-medium text-cyan-200 bg-[#0f172a]/90 backdrop-blur-sm">
+            <span className="absolute px-3 text-xs font-medium text-cyan-200 bg-[#0c1a36]/90 backdrop-blur-sm">
               테스트 계정
             </span>
           </div>
           <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="bg-white/5 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:bg-white/10">
+            <div className="bg-white/5 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:bg-white/10 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-900/10">
               <p className="text-xs text-cyan-100 font-medium">관리자</p>
               <p className="text-xs text-cyan-300 mt-1">admin / admin123</p>
             </div>
-            <div className="bg-white/5 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:bg-white/10">
+            <div className="bg-white/5 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:bg-white/10 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-900/10">
               <p className="text-xs text-cyan-100 font-medium">가맹점</p>
               <p className="text-xs text-cyan-300 mt-1">merchant / merchant123</p>
             </div>
           </div>
         </div>
+
+        {/* 추가 애니메이션 효과 */}
+        <style jsx>{`
+          @keyframes floatParticle {
+            0% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-20px) translateX(10px); }
+            50% { transform: translateY(-40px) translateX(-10px); }
+            75% { transform: translateY(-20px) translateX(10px); }
+            100% { transform: translateY(0) translateX(0); }
+          }
+          .particles-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+          }
+        `}</style>
       </div>
     </div>
   );

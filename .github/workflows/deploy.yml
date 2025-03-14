@@ -1,0 +1,84 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build application
+        run: npm run build
+        env:
+          # 빌드에 필요한 환경 변수 설정
+          NODE_ENV: production
+          PORT: 46566
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_ENCRYPT: ${{ secrets.DB_ENCRYPT }}
+          DB_TRUST_SERVER_CERT: ${{ secrets.DB_TRUST_SERVER_CERT }}
+          DB_TIMEOUT: ${{ secrets.DB_TIMEOUT }}
+          DB_REQUEST_TIMEOUT: ${{ secrets.DB_REQUEST_TIMEOUT }}
+          DB_POOL_MAX: ${{ secrets.DB_POOL_MAX }}
+          DB_POOL_MIN: ${{ secrets.DB_POOL_MIN }}
+          DB_POOL_IDLE_TIMEOUT: ${{ secrets.DB_POOL_IDLE_TIMEOUT }}
+      
+      - name: Create .env file
+        run: |
+          echo "NODE_ENV=production" > .env
+          echo "PORT=46566" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_ENCRYPT=${{ secrets.DB_ENCRYPT }}" >> .env
+          echo "DB_TRUST_SERVER_CERT=${{ secrets.DB_TRUST_SERVER_CERT }}" >> .env
+          echo "DB_TIMEOUT=${{ secrets.DB_TIMEOUT }}" >> .env
+          echo "DB_REQUEST_TIMEOUT=${{ secrets.DB_REQUEST_TIMEOUT }}" >> .env
+          echo "DB_POOL_MAX=${{ secrets.DB_POOL_MAX }}" >> .env
+          echo "DB_POOL_MIN=${{ secrets.DB_POOL_MIN }}" >> .env
+          echo "DB_POOL_IDLE_TIMEOUT=${{ secrets.DB_POOL_IDLE_TIMEOUT }}" >> .env
+      
+      - name: Deploy to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: ".next/,public/,package.json,package-lock.json,.env,next.config.js,ecosystem.config.js,nginx.conf"
+          target: "/home/www/ezpg#"
+      
+      - name: Restart application
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            cd /home/www/ezpg#
+            npm ci --production
+            pm2 restart ezpg-payment || pm2 start ecosystem.config.js
+            sudo cp /home/www/ezpg#/nginx.conf /etc/nginx/sites-available/ezpg-payment
+            sudo ln -sf /etc/nginx/sites-available/ezpg-payment /etc/nginx/sites-enabled/
+            sudo nginx -t && sudo systemctl restart nginx
