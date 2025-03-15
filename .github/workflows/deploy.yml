@@ -66,7 +66,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           source: ".next/,public/,package.json,package-lock.json,.env,next.config.js,ecosystem.config.js,nginx.conf"
-          target: "/home/www/ezpg#"
+          target: "/home/www/ezpg"
       
       - name: Restart application
         uses: appleboy/ssh-action@master
@@ -76,9 +76,9 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            cd /home/www/ezpg#
+            cd /home/www/ezpg
             npm ci --production
             pm2 restart ezpg-payment || pm2 start ecosystem.config.js
-            sudo cp /home/www/ezpg#/nginx.conf /etc/nginx/sites-available/ezpg-payment
+            sudo cp /home/www/ezpg/nginx.conf /etc/nginx/sites-available/ezpg-payment
             sudo ln -sf /etc/nginx/sites-available/ezpg-payment /etc/nginx/sites-enabled/
             sudo nginx -t && sudo systemctl restart nginx

@@ -14,7 +14,7 @@ declare global {
 global.connectionRetries = 0;
 global.pool = null;
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 5;
 let isConnecting = false;
 
 /**
@@ -33,9 +33,10 @@ export async function getPool(): Promise<ConnectionPool> {
     try {
       // 연결 상태 확인
       await global.pool.request().query('SELECT 1 AS test');
+      console.log('기존 데이터베이스 연결 사용');
       return global.pool;
     } catch (error) {
-      console.log('데이터베이스 연결 상태 확인 중 오류가 발생했습니다. 재연결을 시도합니다.');
+      console.error('데이터베이스 연결 상태 확인 중 오류가 발생했습니다. 재연결을 시도합니다.', error);
       global.pool = null;
     }
   }
@@ -43,35 +44,39 @@ export async function getPool(): Promise<ConnectionPool> {
   // 연결 풀 생성
   isConnecting = true;
   try {
+    console.log('새 데이터베이스 연결 시도 중...', {
+      server: dbConfig.server,
+      port: dbConfig.port,
+      database: dbConfig.database,
+      user: dbConfig.user
+    });
+    
     global.pool = await new ConnectionPool(dbConfig).connect();
-    console.log('데이터베이스 연결 풀이 생성되었습니다.');
+    console.log('데이터베이스 연결 풀이 성공적으로 생성되었습니다.');
     global.connectionRetries = 0;
     
     // 연결 풀 이벤트 처리
     global.pool.on('error', (err) => {
       console.error('데이터베이스 연결 풀 오류:', err);
-      global.pool = null; // 오류 발생 시 풀 초기화
+      global.pool = null;
     });
     
     return global.pool;
   } catch (error) {
-    console.error('데이터베이스 연결 풀 생성 중 오류가 발생했습니다:', error);
+    console.error('데이터베이스 연결 풀 생성 중 오류:', error);
+    global.connectionRetries++;
     
-    // 재시도 로직
     if (global.connectionRetries < MAX_RETRIES) {
-      global.connectionRetries++;
       console.log(`데이터베이스 연결 재시도 (${global.connectionRetries}/${MAX_RETRIES})...`);
-      
-      // 모의 데이터 모드로 전환 여부 확인
-      if (global.connectionRetries >= MAX_RETRIES) {
-        console.log('데이터베이스 연결 실패. 모의 데이터 모드로 전환합니다.');
-      }
-      
-      isConnecting = false;
-      return getPool();
+      // 지수 백오프 적용
+      const delay = Math.min(1000 * Math.pow(2, global.connectionRetries), 30000);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    } else {
+      console.error(`최대 재시도 횟수(${MAX_RETRIES})를 초과했습니다.`);
     }
     
-    throw error;
+    isConnecting = false;
+    throw new Error('데이터베이스 연결에 실패했습니다.');
   } finally {
     isConnecting = false;
   }
@@ -82,30 +87,23 @@ export async function getPool(): Promise<ConnectionPool> {
  * @param query SQL 쿼리
  * @param params 쿼리 파라미터
  */
-export async function executeQuery<T>(
+export async function executeQuery<T = any>(
   query: string,
   params: Record<string, any> = {}
 ): Promise<T[]> {
   try {
     const pool = await getPool();
     const request = pool.request();
-
+    
     // 파라미터 추가
     Object.entries(params).forEach(([key, value]) => {
       request.input(key, value);
     });
-
-    const result = await request.query<T>(query);
-    return result.recordset;
+    
+    const result = await request.query(query);
+    return result.recordset as T[];
   } catch (error) {
-    console.error('쿼리 실행 중 오류가 발생했습니다:', error);
-    
-    // 모의 데이터 모드인 경우 빈 배열 반환
-    if (global.connectionRetries >= MAX_RETRIES) {
-      console.log('모의 데이터 모드: 빈 결과 반환');
-      return [] as T[];
-    }
-    
+    console.error('쿼리 실행 중 오류:', error);
     throw error;
   }
 }
@@ -115,30 +113,23 @@ export async function executeQuery<T>(
  * @param procedureName 프로시저 이름
  * @param params 프로시저 파라미터
  */
-export async function executeProcedure<T>(
+export async function executeProcedure<T = any>(
   procedureName: string,
   params: Record<string, any> = {}
 ): Promise<T[]> {
   try {
     const pool = await getPool();
     const request = pool.request();
-
+    
     // 파라미터 추가
     Object.entries(params).forEach(([key, value]) => {
       request.input(key, value);
     });
-
-    const result = await request.execute<T>(procedureName);
-    return result.recordset;
+    
+    const result = await request.execute(procedureName);
+    return result.recordset as T[];
   } catch (error) {
-    console.error(`프로시저 ${procedureName} 실행 중 오류가 발생했습니다:`, error);
-    
-    // 모의 데이터 모드인 경우 빈 배열 반환
-    if (global.connectionRetries >= MAX_RETRIES) {
-      console.log(`모의 데이터 모드: 프로시저 ${procedureName}에 대한 빈 결과 반환`);
-      return [] as T[];
-    }
-    
+    console.error('저장 프로시저 실행 중 오류:', error);
     throw error;
   }
 }
@@ -151,10 +142,10 @@ export async function closePool(): Promise<void> {
   if (global.pool) {
     try {
       await global.pool.close();
-      console.log('데이터베이스 연결 풀이 닫혔습니다.');
       global.pool = null;
+      console.log('데이터베이스 연결 풀이 닫혔습니다.');
     } catch (error) {
-      console.error('데이터베이스 연결 풀을 닫는 중 오류가 발생했습니다:', error);
+      console.error('데이터베이스 연결 풀 종료 중 오류:', error);
       throw error;
     }
   }
@@ -169,7 +160,29 @@ export async function checkConnection(): Promise<boolean> {
     await pool.request().query('SELECT 1 AS test');
     return true;
   } catch (error) {
-    console.error('데이터베이스 연결 상태 확인 중 오류가 발생했습니다:', error);
+    console.error('데이터베이스 연결 상태 확인 중 오류:', error);
+    return false;
+  }
+}
+
+/**
+ * 테이블 존재 여부를 확인합니다.
+ * @param tableName 확인할 테이블 이름
+ */
+export async function tableExists(tableName: string): Promise<boolean> {
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input('tableName', tableName)
+      .query(`
+        SELECT COUNT(*) AS tableCount
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_NAME = @tableName
+      `);
+    
+    return result.recordset[0].tableCount > 0;
+  } catch (error) {
+    console.error(`테이블 ${tableName} 존재 여부 확인 중 오류:`, error);
     return false;
   }
 }

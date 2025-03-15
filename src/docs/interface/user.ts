@@ -25,6 +25,8 @@ export interface User {
   createdAt?: string;
   /** 계정 수정 시간 */
   updatedAt?: string;
+  /** 프로필 이미지 URL */
+  profileImage?: string;
 }
 
 /**

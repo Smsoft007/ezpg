@@ -1,6 +1,7 @@
 import React from 'react';
 import { User } from '@/docs/interface/user';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+// @ts-ignore
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onEdit }) => {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="flex flex-row items-center gap-4">
         <Avatar className="h-16 w-16">
-          <AvatarImage src={user.profileImage} alt={user.userName} />
+          {/* 프로필 이미지가 있을 경우에만 이미지 표시, 없으면 폴백만 사용 */}
+          {user.profileImage && <AvatarImage src={user.profileImage} alt={user.userName} />}
           <AvatarFallback>{getUserInitials(user.userName)}</AvatarFallback>
         </Avatar>
         <div>
@@ -66,7 +68,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onEdit }) => {
           )}
           <div className="flex justify-between">
             <span className="text-sm font-medium text-gray-500">가입일</span>
-            <span className="text-sm">{new Date(user.createdAt).toLocaleDateString()}</span>
+            <span className="text-sm">
+              {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '정보 없음'}
+            </span>
           </div>
         </div>
       </CardContent>

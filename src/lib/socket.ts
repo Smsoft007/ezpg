@@ -71,6 +71,8 @@ export interface DepositNotification {
   amount: number;
   transactionId: string;
   timestamp: string;
+  title: string;
+  message: string;
 }
 
 // React Hook을 사용하여 소켓 이벤트 구독

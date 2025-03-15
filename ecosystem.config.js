@@ -4,7 +4,7 @@ module.exports = {
       name: 'ezpg-payment',
       script: 'npm',
       args: 'start',
-      cwd: '/home/www/ezpg#',
+      cwd: '/home/www/ezpg',
       instances: 1,
       autorestart: true,
       watch: false,

@@ -8,7 +8,7 @@ const nextConfig = {
     // 결제 관련 키 (소문자로 설정)
     mkey: 'dBztxCbxPjc19h5rmZbZwvmyFb7O9nJX3ftwcKiW07nNdTJKg9bw8EEOniOinNhz0r2ifdJgnxo2UbmlRC7DyA',
     mid: 'test03',
-    PORT: 46566,
+    PORT: '46566',
   },
   // 필요한 경우 API 경로 재작성 설정
   // rewrites: async () => {
@@ -35,15 +35,21 @@ const nextConfig = {
         stream: false,
         constants: false,
         crypto: false,
+        dgram: false, 
+        child_process: false, 
+        http: false, 
+        https: false, 
+        zlib: false, 
+        url: false, 
       };
     }
     return config;
   },
   serverRuntimeConfig: {
-    PORT: 46566
+    PORT: '46566'
   },
   publicRuntimeConfig: {
-    PORT: 46566
+    PORT: '46566'
   },
 };
 

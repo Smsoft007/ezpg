@@ -3,6 +3,7 @@
  */
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 interface BreadcrumbItem {
   label: string;
@@ -14,6 +15,7 @@ interface PageHeaderProps {
   description?: string;
   breadcrumbs?: BreadcrumbItem[];
   actions?: React.ReactNode;
+  className?: string;
 }
 
 export function PageHeader({
@@ -21,9 +23,10 @@ export function PageHeader({
   description,
   breadcrumbs,
   actions,
+  className,
 }: PageHeaderProps) {
   return (
-    <div className="flex flex-col space-y-4 pb-6">
+    <div className={cn("flex flex-col space-y-4 pb-6", className)}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <nav className="flex items-center text-sm text-muted-foreground">
           <ol className="flex flex-wrap items-center gap-1.5">

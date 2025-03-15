@@ -37,9 +37,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // params 객체를 비동기적으로 처리
-    const { id } = params;
-    const merchantId = parseInt(id);
+    // params 객체가 이미 비동기적으로 처리되어 있으므로 바로 사용 가능
+    const merchantId = parseInt(params.id);
     
     if (isNaN(merchantId)) {
       return NextResponse.json(
@@ -51,31 +50,28 @@ export async function GET(
       );
     }
 
-    // 가맹점 상세 정보 조회
     const merchant = await getMerchantById(merchantId);
-
-    return NextResponse.json({
-      status: 'success',
-      data: merchant
-    });
-  } catch (error: any) {
-    console.error('가맹점 상세 정보 조회 중 오류가 발생했습니다:', error);
     
-    // 가맹점을 찾을 수 없는 경우
-    if (error.message && error.message.includes('찾을 수 없습니다')) {
+    if (!merchant) {
       return NextResponse.json(
         { 
           status: 'error', 
-          message: '해당 ID의 가맹점을 찾을 수 없습니다.' 
+          message: '가맹점을 찾을 수 없습니다.' 
         },
         { status: 404 }
       );
     }
-    
+
+    return NextResponse.json({ 
+      status: 'success', 
+      data: merchant 
+    });
+  } catch (error) {
+    console.error('가맹점 조회 오류:', error);
     return NextResponse.json(
       { 
         status: 'error', 
-        message: '가맹점 정보를 조회하는 중 오류가 발생했습니다.' 
+        message: '가맹점 조회 중 오류가 발생했습니다.' 
       },
       { status: 500 }
     );
@@ -90,9 +86,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // params 객체를 비동기적으로 처리
-    const { id } = params;
-    const merchantId = parseInt(id);
+    const merchantId = parseInt(params.id);
     
     if (isNaN(merchantId)) {
       return NextResponse.json(
@@ -104,35 +98,35 @@ export async function PUT(
       );
     }
 
-    // 요청 본문 파싱
-    const body = await request.json();
-
-    // 데이터 유효성 검증
-    const validationResult = merchantUpdateSchema.safeParse(body);
+    const data = await request.json();
+    
+    // 데이터 유효성 검사
+    const validationResult = merchantUpdateSchema.safeParse(data);
+    
     if (!validationResult.success) {
       return NextResponse.json(
         { 
           status: 'error', 
-          message: '유효하지 않은 데이터입니다.',
-          errors: validationResult.error.errors 
+          message: '입력 데이터가 유효하지 않습니다.', 
+          errors: validationResult.error.format() 
         },
         { status: 400 }
       );
     }
 
-    // 가맹점 정보 수정
-    await updateMerchant(merchantId, validationResult.data);
-
-    return NextResponse.json({
-      status: 'success',
-      message: '가맹점 정보가 성공적으로 수정되었습니다.'
+    const updatedMerchant = await updateMerchant(merchantId, validationResult.data);
+    
+    return NextResponse.json({ 
+      status: 'success', 
+      data: updatedMerchant,
+      message: '가맹점 정보가 성공적으로 업데이트되었습니다.'
     });
   } catch (error) {
-    console.error('가맹점 정보 수정 중 오류가 발생했습니다:', error);
+    console.error('가맹점 업데이트 오류:', error);
     return NextResponse.json(
       { 
         status: 'error', 
-        message: '가맹점 정보를 수정하는 중 오류가 발생했습니다.' 
+        message: '가맹점 업데이트 중 오류가 발생했습니다.' 
       },
       { status: 500 }
     );
@@ -147,9 +141,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    // params 객체를 비동기적으로 처리
-    const { id } = params;
-    const merchantId = parseInt(id);
+    const merchantId = parseInt(params.id);
     
     if (isNaN(merchantId)) {
       return NextResponse.json(
@@ -161,35 +153,36 @@ export async function PATCH(
       );
     }
 
-    // 요청 본문 파싱
-    const body = await request.json();
-
-    // 데이터 유효성 검증
-    const validationResult = merchantStatusSchema.safeParse(body);
+    const data = await request.json();
+    
+    // 데이터 유효성 검사
+    const validationResult = merchantStatusSchema.safeParse(data);
+    
     if (!validationResult.success) {
       return NextResponse.json(
         { 
           status: 'error', 
-          message: '유효하지 않은 상태값입니다.',
-          errors: validationResult.error.errors 
+          message: '입력 데이터가 유효하지 않습니다.', 
+          errors: validationResult.error.format() 
         },
         { status: 400 }
       );
     }
 
-    // 가맹점 상태 변경
-    await updateMerchantStatus(merchantId, validationResult.data.status);
-
-    return NextResponse.json({
-      status: 'success',
-      message: '가맹점 상태가 성공적으로 변경되었습니다.'
+    const { status } = validationResult.data;
+    const updatedMerchant = await updateMerchantStatus(merchantId, status);
+    
+    return NextResponse.json({ 
+      status: 'success', 
+      data: updatedMerchant,
+      message: '가맹점 상태가 성공적으로 업데이트되었습니다.'
     });
   } catch (error) {
-    console.error('가맹점 상태 변경 중 오류가 발생했습니다:', error);
+    console.error('가맹점 상태 업데이트 오류:', error);
     return NextResponse.json(
       { 
         status: 'error', 
-        message: '가맹점 상태를 변경하는 중 오류가 발생했습니다.' 
+        message: '가맹점 상태 업데이트 중 오류가 발생했습니다.' 
       },
       { status: 500 }
     );
@@ -204,9 +197,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // params 객체를 비동기적으로 처리
-    const { id } = params;
-    const merchantId = parseInt(id);
+    const merchantId = parseInt(params.id);
     
     if (isNaN(merchantId)) {
       return NextResponse.json(
@@ -218,19 +209,18 @@ export async function DELETE(
       );
     }
 
-    // 가맹점 삭제
     await deleteMerchant(merchantId);
     
-    return NextResponse.json({
-      status: 'success',
-      message: '가맹점이 성공적으로 삭제되었습니다.'
+    return NextResponse.json({ 
+      status: 'success', 
+      message: '가맹점이 성공적으로 삭제되었습니다.' 
     });
   } catch (error) {
-    console.error('가맹점 삭제 중 오류가 발생했습니다:', error);
+    console.error('가맹점 삭제 오류:', error);
     return NextResponse.json(
       { 
         status: 'error', 
-        message: '가맹점을 삭제하는 중 오류가 발생했습니다.' 
+        message: '가맹점 삭제 중 오류가 발생했습니다.' 
       },
       { status: 500 }
     );

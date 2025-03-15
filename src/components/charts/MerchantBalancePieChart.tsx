@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Cell,
   Legend,
   Pie,
   PieChart,
@@ -80,11 +79,17 @@ const MerchantBalancePieChart: React.FC<MerchantBalancePieChartProps> = ({
     );
   };
 
+  // 데이터에 색상 추가
+  const coloredData = data.map((entry, index) => ({
+    ...entry,
+    fill: COLORS[index % COLORS.length],
+  }));
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <Pie
-          data={data}
+          data={coloredData}
           cx="50%"
           cy="50%"
           labelLine={false}
@@ -93,11 +98,10 @@ const MerchantBalancePieChart: React.FC<MerchantBalancePieChartProps> = ({
           fill="#8884d8"
           dataKey={dataKey}
           nameKey={nameKey}
-        >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-          ))}
-        </Pie>
+          isAnimationActive={true}
+          paddingAngle={2}
+          cornerRadius={3}
+        />
         <Tooltip content={<CustomTooltip />} />
         <Legend
           content={renderCustomizedLegend}

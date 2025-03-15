@@ -49,9 +49,6 @@ declare module 'recharts' {
     label?: string | number | React.ReactElement | object;
     allowDecimals?: boolean;
     allowDuplicatedCategory?: boolean;
-    angle?: number;
-    textAnchor?: 'start' | 'middle' | 'end';
-    orientation?: 'top' | 'bottom';
   }
 
   export interface YAxisProps {
@@ -64,6 +61,8 @@ declare module 'recharts' {
     strokeWidth?: number;
     fontSize?: number | string;
     padding?: { top?: number; bottom?: number };
+    top?: number;
+    bottom?: number;
     allowDataOverflow?: boolean;
     scale?: 'auto' | 'linear' | 'pow' | 'sqrt' | 'log' | 'identity' | 'time' | 'band' | 'point' | 'ordinal' | 'quantile' | 'quantize' | 'utc' | 'sequential' | 'threshold';
     type?: 'number' | 'category';
@@ -88,6 +87,10 @@ declare module 'recharts' {
   export interface TooltipProps {
     content?: React.ReactElement | ((props: any) => React.ReactNode);
     viewBox?: { x?: number; y?: number; width?: number; height?: number };
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
     active?: boolean;
     separator?: string;
     offset?: number;
@@ -177,6 +180,61 @@ declare module 'recharts' {
     children?: React.ReactNode;
   }
 
+  export interface PieChartProps {
+    width?: number;
+    height?: number;
+    margin?: { top?: number; right?: number; bottom?: number; left?: number };
+    className?: string;
+    onClick?: (data: any, index: number) => void;
+    onMouseLeave?: (data: any) => void;
+    onMouseEnter?: (data: any) => void;
+    onMouseMove?: (data: any) => void;
+    onMouseDown?: (data: any) => void;
+    onMouseUp?: (data: any) => void;
+    children?: React.ReactNode;
+  }
+
+  export interface PieProps {
+    cx?: number | string;
+    cy?: number | string;
+    innerRadius?: number | string;
+    outerRadius?: number | string;
+    startAngle?: number;
+    endAngle?: number;
+    paddingAngle?: number;
+    cornerRadius?: number;
+    dataKey: string;
+    nameKey?: string;
+    valueKey?: string;
+    data?: any[];
+    minAngle?: number;
+    legendType?: 'line' | 'square' | 'rect' | 'circle' | 'cross' | 'diamond' | 'star' | 'triangle' | 'wye';
+    label?: boolean | React.ReactElement | ((props: any) => React.ReactNode) | object;
+    labelLine?: boolean | React.ReactElement | ((props: any) => React.ReactNode) | object;
+    activeIndex?: number | number[];
+    activeShape?: React.ReactElement | ((props: any) => React.ReactNode) | object;
+    isAnimationActive?: boolean;
+    animationBegin?: number;
+    animationDuration?: number;
+    animationEasing?: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear';
+    id?: string;
+    onClick?: (data: any, index: number) => void;
+    onMouseLeave?: (data: any) => void;
+    onMouseEnter?: (data: any) => void;
+    fill?: string;
+    stroke?: string;
+    strokeWidth?: number;
+    children?: React.ReactNode;
+  }
+
+  export interface CellProps {
+    fill?: string;
+    stroke?: string;
+    strokeWidth?: number;
+    strokeDasharray?: string;
+    opacity?: number;
+  }
+
   export class Line extends React.Component<LineProps> {}
   export class XAxis extends React.Component<XAxisProps> {}
   export class YAxis extends React.Component<YAxisProps> {}
@@ -185,4 +243,7 @@ declare module 'recharts' {
   export class Legend extends React.Component<LegendProps> {}
   export class ResponsiveContainer extends React.Component<ResponsiveContainerProps> {}
   export class LineChart extends React.Component<LineChartProps> {}
+  export class PieChart extends React.Component<PieChartProps> {}
+  export class Pie extends React.Component<PieProps> {}
+  export class Cell extends React.Component<CellProps> {}
 }

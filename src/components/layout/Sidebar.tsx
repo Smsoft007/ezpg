@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Database,
   HelpCircle,
   LayoutDashboard,
   LogOut,
@@ -294,7 +295,7 @@ export default function Sidebar({ onToggle, isCollapsed: externalCollapsed }: Si
         { title: "권한 관리", href: "/dashboard/system/permissions" },
         { title: "시스템 설정", href: "/dashboard/system/settings" },
         { title: "API 설정", href: "/dashboard/system/api-settings" },
-        { title: "알림 설정", href: "/dashboard/system/notifications" },
+        { title: "알림 설정", href: "/dashboard/settings/notifications" },
         { title: "감사 로그", href: "/dashboard/system/audit-logs" },
         { title: "백업 관리", href: "/dashboard/system/backups" },
       ],
@@ -317,6 +318,42 @@ export default function Sidebar({ onToggle, isCollapsed: externalCollapsed }: Si
         { title: "로그인 내역", href: "/dashboard/activities/logins" },
         { title: "작업 내역", href: "/dashboard/activities/actions" },
         { title: "알림 내역", href: "/dashboard/activities/notifications" },
+      ],
+    },
+    {
+      title: "API 관리",
+      icon: <Activity size={20} />,
+      adminOnly: true,
+      submenu: [
+        { title: "API 문서", href: "/dashboard/api/docs" },
+        { title: "API 키 관리", href: "/dashboard/api/keys" },
+        { title: "API 사용 현황", href: "/dashboard/api/usage" },
+        { title: "API 로그", href: "/dashboard/api/logs" },
+        { title: "API 테스트", href: "/dashboard/api/test" },
+        { title: "웹훅 관리", href: "/dashboard/api/webhooks" },
+      ],
+    },
+    {
+      title: "데이터 관리",
+      icon: <Database size={20} />,
+      adminOnly: true,
+      submenu: [
+        { title: "데이터 조회", href: "/dashboard/data/query" },
+        { title: "데이터 수정", href: "/dashboard/data/edit" },
+        { title: "데이터 백업", href: "/dashboard/data/backup" },
+        { title: "데이터 복원", href: "/dashboard/data/restore" },
+        { title: "데이터 내보내기", href: "/dashboard/data/export" },
+        { title: "데이터 가져오기", href: "/dashboard/data/import" },
+      ],
+    },
+    {
+      title: "설정",
+      icon: <Settings size={20} />,
+      submenu: [
+        { title: "개인 정보 설정", href: "/dashboard/settings/profile" },
+        { title: "알림 설정", href: "/dashboard/settings/notifications" },
+        { title: "보안 설정", href: "/dashboard/settings/security" },
+        { title: "테마 설정", href: "/dashboard/settings/theme" },
       ],
     },
   ];
@@ -356,11 +393,18 @@ export default function Sidebar({ onToggle, isCollapsed: externalCollapsed }: Si
           : [];
 
         return (
-          <div key={index}>
+          <div
+            key={index}
+            className={cn(
+              "relative",
+              isCollapsed && !isHovering ? "w-full flex justify-center" : "w-full"
+            )}
+          >
             {/* 메뉴 아이템 */}
             <div
               className={cn(
-                "flex items-center justify-between py-2 px-3 rounded-lg cursor-pointer transition-colors",
+                "flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors",
+                isCollapsed && !isHovering ? "justify-center" : "justify-between",
                 isActive
                   ? "bg-blue-50 text-blue-700"
                   : "text-gray-700 hover:bg-gray-100"
@@ -373,12 +417,16 @@ export default function Sidebar({ onToggle, isCollapsed: externalCollapsed }: Si
                 }
               }}
             >
-              <div className="flex items-center space-x-3">
+              <div className={cn(
+                "flex items-center",
+                isCollapsed && !isHovering ? "justify-center" : "space-x-3"
+              )}>
                 {item.icon && (
                   <span
                     className={cn(
                       "flex-shrink-0",
-                      isActive ? "text-blue-700" : "text-gray-500"
+                      isActive ? "text-blue-700" : "text-gray-500",
+                      isCollapsed && !isHovering ? "mx-auto" : ""
                     )}
                   >
                     {item.icon}
@@ -407,10 +455,11 @@ export default function Sidebar({ onToggle, isCollapsed: externalCollapsed }: Si
             </div>
 
             {/* 서브메뉴 */}
-            {hasSubmenu && filteredSubmenu.length > 0 && isOpen && (
+            {hasSubmenu && filteredSubmenu.length > 0 && (isOpen || (isCollapsed && isHovering)) && (
               <div
                 className={cn(
-                  "pl-10 mt-1 space-y-1",
+                  "mt-1 space-y-1",
+                  isCollapsed && isHovering ? "absolute left-full top-0 ml-2 bg-slate-900 p-2 rounded-lg shadow-lg z-50 min-w-[200px]" : "pl-10",
                   isCollapsed && !isHovering ? "hidden" : "block"
                 )}
               >
@@ -440,25 +489,22 @@ export default function Sidebar({ onToggle, isCollapsed: externalCollapsed }: Si
 
   return (
     <>
-      {/* 사이드바 */}
-      <aside
+      <div
         className={cn(
-          "h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white flex flex-col fixed inset-y-0 left-0 z-40 transition-all duration-300 ease-in-out overflow-hidden shadow-xl",
-          isCollapsed && !isMobileMenuOpen
-            ? "w-16" // 축소 모드
-            : isMobileMenuOpen
-            ? "w-64 translate-x-0" // 모바일에서 열린 상태
-            : isCollapsed
-            ? "w-64 -translate-x-full" // 모바일에서 닫힌 상태
-            : "w-64" // 기본 상태
+          "h-full min-h-screen bg-slate-900 text-white border-r flex flex-col",
+          isCollapsed && !isHovering ? "w-16" : "w-64",
+          "transition-all duration-300 ease-in-out",
+          "overflow-y-auto overflow-x-hidden",
+          isCollapsed && !isHovering ? "items-center px-0" : "pl-2 pr-2",
+          "relative"
         )}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
         {/* 사이드바 헤더 */}
-        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-700">
+        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-700 w-full">
           <div className="flex items-center">
-            {!isCollapsed && (
+            {(!isCollapsed || isHovering) && (
               <div className="text-xl font-bold text-white">EZ Pay</div>
             )}
           </div>
@@ -466,13 +512,13 @@ export default function Sidebar({ onToggle, isCollapsed: externalCollapsed }: Si
             onClick={toggleSidebar}
             className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
           >
-            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            {isCollapsed && !isHovering ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
         </div>
 
         {/* 사용자 정보 */}
-        {!isCollapsed && userInfo && (
-          <div className="px-4 py-3 border-b border-gray-700 bg-gradient-to-r from-indigo-900 to-purple-900">
+        {(!isCollapsed || isHovering) && userInfo && (
+          <div className="px-4 py-3 border-b border-gray-700 bg-gradient-to-r from-indigo-900 to-purple-900 w-full">
             <p className="text-sm text-gray-300">환영합니다</p>
             <p className="font-medium">{userInfo.userName}님</p>
             <p className="text-xs text-gray-400 mt-1">
@@ -494,8 +540,14 @@ export default function Sidebar({ onToggle, isCollapsed: externalCollapsed }: Si
         )}
 
         {/* 메뉴 항목 */}
-        <div className="flex-1 overflow-y-auto py-4 px-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
-          <nav className="space-y-1">{renderMenuItems()}</nav>
+        <div className={cn(
+          "flex-1 overflow-y-auto py-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 w-full",
+          isCollapsed && !isHovering ? "px-0 flex flex-col items-center" : "px-2"
+        )}>
+          <nav className={cn(
+            "space-y-1 w-full",
+            isCollapsed && !isHovering ? "flex flex-col items-center" : ""
+          )}>{renderMenuItems()}</nav>
         </div>
 
         {/* 로그아웃 버튼 */}
@@ -520,7 +572,7 @@ export default function Sidebar({ onToggle, isCollapsed: externalCollapsed }: Si
             </button>
           )}
         </div>
-      </aside>
+      </div>
 
       {/* 모바일 오버레이 */}
       {isMobileMenuOpen && (

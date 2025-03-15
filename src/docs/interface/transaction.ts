@@ -122,23 +122,23 @@ export interface TransactionLog {
  * 거래 통계 데이터를 정의합니다.
  */
 export interface TransactionStatistics {
-  /** 통계 기간 시작일 */
+  /** 시작 날짜 */
   startDate: string;
-  /** 통계 기간 종료일 */
+  /** 종료 날짜 */
   endDate: string;
-  /** 가맹점 ID */
+  /** 가맹점 ID (선택적) */
   merchantId?: string;
   /** 총 거래 수 */
   totalTransactions: number;
   /** 총 거래 금액 */
   totalAmount: number;
-  /** 성공 거래 수 */
+  /** 성공한 거래 수 */
   successfulTransactions: number;
-  /** 성공 거래 금액 */
+  /** 성공한 거래 금액 */
   successfulAmount: number;
-  /** 실패 거래 수 */
+  /** 실패한 거래 수 */
   failedTransactions: number;
-  /** 실패 거래 금액 */
+  /** 실패한 거래 금액 */
   failedAmount: number;
   /** 평균 거래 금액 */
   averageAmount: number;
@@ -154,4 +154,70 @@ export interface TransactionStatistics {
   dailyData?: Record<string, number>;
   /** 월별 거래 데이터 */
   monthlyData?: Record<string, number>;
+}
+
+/**
+ * 거래 필터 인터페이스
+ * 거래 목록 필터링을 위한 옵션을 정의합니다.
+ */
+export interface TransactionFilter {
+  /** 시작 날짜 */
+  startDate?: string;
+  /** 종료 날짜 */
+  endDate?: string;
+  /** 가맹점 ID */
+  merchantId?: string;
+  /** 거래 상태 */
+  status?: 'pending' | 'completed' | 'failed' | 'canceled';
+  /** 거래 유형 */
+  type?: 'deposit' | 'withdrawal' | 'transfer' | 'refund' | 'adjustment';
+  /** 최소 금액 */
+  minAmount?: number;
+  /** 최대 금액 */
+  maxAmount?: number;
+  /** 검색어 */
+  searchTerm?: string;
+  /** 정렬 기준 */
+  sortBy?: string;
+  /** 정렬 방향 */
+  sortDirection?: 'asc' | 'desc';
+}
+
+/**
+ * 거래 페이지네이션 인터페이스
+ * 거래 목록의 페이지네이션 정보를 정의합니다.
+ */
+export interface TransactionPagination {
+  /** 현재 페이지 번호 */
+  currentPage: number;
+  /** 전체 페이지 수 */
+  totalPages: number;
+  /** 페이지당 항목 수 */
+  pageSize: number;
+  /** 전체 항목 수 */
+  totalItems: number;
+}
+
+/**
+ * 거래 응답 인터페이스
+ * API 응답으로 반환되는 거래 목록과 페이지네이션 정보를 정의합니다.
+ */
+export interface TransactionResponse {
+  /** 거래 목록 */
+  transactions: Transaction[];
+  /** 페이지네이션 정보 */
+  pagination: TransactionPagination;
+}
+
+/**
+ * 거래 상세 응답 인터페이스
+ * API 응답으로 반환되는 거래 상세 정보를 정의합니다.
+ */
+export interface TransactionDetailResponse {
+  /** 거래 정보 */
+  transaction: Transaction;
+  /** 거래 로그 */
+  logs?: TransactionLog[];
+  /** 관련 거래 */
+  relatedTransactions?: Transaction[];
 }
