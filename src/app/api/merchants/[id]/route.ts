@@ -37,8 +37,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // params 객체가 이미 비동기적으로 처리되어 있으므로 바로 사용 가능
-    const merchantId = parseInt(params.id);
+    // params 처리 (비동기 처리 제거)
+    const { id } = params;
+    const merchantId = parseInt(id);
     
     if (isNaN(merchantId)) {
       return NextResponse.json(
@@ -86,7 +87,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const merchantId = parseInt(params.id);
+    // params 처리 (비동기 처리 제거)
+    const { id } = params;
+    const merchantId = parseInt(id);
     
     if (isNaN(merchantId)) {
       return NextResponse.json(
@@ -141,7 +144,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const merchantId = parseInt(params.id);
+    // params 처리 (비동기 처리 제거)
+    const { id } = params;
+    const merchantId = parseInt(id);
     
     if (isNaN(merchantId)) {
       return NextResponse.json(
@@ -197,7 +202,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const merchantId = parseInt(params.id);
+    // params 처리 (비동기 처리 제거)
+    const { id } = params;
+    const merchantId = parseInt(id);
     
     if (isNaN(merchantId)) {
       return NextResponse.json(

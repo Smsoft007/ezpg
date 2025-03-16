@@ -13,6 +13,7 @@ import { fetchMerchantById } from "@/api/merchants";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { Merchant, MerchantTransaction } from "@/types/merchants";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { MerchantStatusBadge } from "@/components/merchants/MerchantStatusBadge";
 
 // Skeleton 컴포넌트 직접 구현
 const Skeleton = ({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) => (
@@ -25,41 +26,12 @@ const Skeleton = ({ className = "", ...props }: React.HTMLAttributes<HTMLDivElem
 // 가맹점 상세 정보 인터페이스
 interface MerchantDetail extends Merchant {
   contact?: {
-    id: number;
-    merchantId: number;
     name: string;
     email: string;
-    phone: string;
+    phoneNumber: string;
     position?: string;
-    createdAt: string;
-    updatedAt?: string;
   };
-  address?: {
-    id: number;
-    merchantId: number;
-    zipCode: string;
-    address1: string;
-    address2?: string;
-    createdAt: string;
-    updatedAt?: string;
-  };
-  account?: {
-    id: number;
-    merchantId: number;
-    bank: string;
-    accountNumber: string;
-    accountHolder: string;
-    createdAt: string;
-    updatedAt?: string;
-  };
-  fees?: {
-    id: number;
-    merchantId: number;
-    paymentFee: string;
-    withdrawalFee: string;
-    createdAt: string;
-    updatedAt?: string;
-  };
+  transactions?: MerchantTransaction[];
 }
 
 // 샘플 거래 내역 데이터 (추후 API 연동 시 제거)
@@ -124,19 +96,19 @@ export default function MerchantDetailPage() {
   const router = useRouter();
   const [merchant, setMerchant] = useState<MerchantDetail | null>(null);
   const [transactions, setTransactions] = useState<MerchantTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
+        setIsLoading(true);
         setError(null);
         
         // 가맹점 ID가 없는 경우
         if (!params.id) {
           setError("가맹점 ID가 유효하지 않습니다.");
-          setLoading(false);
+          setIsLoading(false);
           return;
         }
         
@@ -145,49 +117,34 @@ export default function MerchantDetailPage() {
         
         if (response.status === 'error') {
           setError(response.error?.message || "가맹점 정보를 불러오는 중 오류가 발생했습니다.");
-          setLoading(false);
+          setIsLoading(false);
           return;
+        }
+        
+        // 경고 메시지가 있는 경우 표시
+        if (response.warning) {
+          setError(response.warning.message);
         }
         
         const merchantData = response.data;
         
         if (!merchantData) {
           setError("가맹점 정보가 존재하지 않습니다.");
-          setLoading(false);
+          setIsLoading(false);
           return;
         }
         
         // Merchant 타입을 MerchantDetail 타입으로 변환
         const merchantDetail: MerchantDetail = {
           ...merchantData,
-          // 나머지 필드 매핑
-          contact: undefined, // 실제 데이터가 있다면 여기에 매핑
-          address: {
-            id: 0, // 임시 ID 값
-            merchantId: merchantData.id,
-            zipCode: merchantData.zipCode,
-            address1: merchantData.address1,
-            address2: merchantData.address2,
-            createdAt: merchantData.createdAt,
-            updatedAt: merchantData.updatedAt
+          // 연락처 정보 매핑
+          contact: {
+            name: merchantData.representativeName,
+            email: merchantData.email,
+            phoneNumber: merchantData.phoneNumber,
+            position: '대표자'
           },
-          account: {
-            id: 0, // 임시 ID 값
-            merchantId: merchantData.id,
-            bank: merchantData.bank,
-            accountNumber: merchantData.accountNumber,
-            accountHolder: merchantData.accountHolder,
-            createdAt: merchantData.createdAt,
-            updatedAt: merchantData.updatedAt
-          },
-          fees: {
-            id: 0, // 임시 ID 값
-            merchantId: merchantData.id,
-            paymentFee: merchantData.paymentFee.toString(),
-            withdrawalFee: merchantData.withdrawalFee.toString(),
-            createdAt: merchantData.createdAt,
-            updatedAt: merchantData.updatedAt
-          }
+          transactions: sampleTransactions
         };
         
         setMerchant(merchantDetail);
@@ -195,30 +152,16 @@ export default function MerchantDetailPage() {
         // 거래 내역은 아직 샘플 데이터 사용 (추후 API 연동)
         setTransactions(sampleTransactions);
         
-        setLoading(false);
+        setIsLoading(false);
       } catch (error) {
         console.error("데이터 로딩 중 오류 발생:", error);
         setError("가맹점 정보를 불러오는 중 오류가 발생했습니다.");
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
     fetchData();
   }, [params.id]);
-
-  // 상태에 따른 배지 색상
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge className="bg-emerald-500 hover:bg-emerald-600">활성</Badge>;
-      case "inactive":
-        return <Badge variant="secondary" className="bg-slate-400 hover:bg-slate-500">비활성</Badge>;
-      case "pending":
-        return <Badge variant="outline" className="border-amber-500 text-amber-500 hover:bg-amber-50">대기중</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
 
   // 거래 유형에 따른 배지 색상
   const getTransactionTypeBadge = (type: string) => {
@@ -327,10 +270,10 @@ export default function MerchantDetailPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              {merchant.name} {getStatusBadge(merchant.status)}
+              {merchant.name} <MerchantStatusBadge status={merchant.status} />
             </h1>
             <p className="text-muted-foreground mt-1">
-              사업자번호: {merchant.businessNumber} | 등록일: {formatDate(merchant.createdAt)}
+              사업자번호: {merchant.businessNumber} | 등록일: {formatDate(merchant.registrationDate)}
             </p>
           </div>
         </div>
@@ -366,14 +309,12 @@ export default function MerchantDetailPage() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">연락처</dt>
-                <dd className="font-medium">{merchant.phone}</dd>
+                <dd className="font-medium">{merchant.phoneNumber}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">주소</dt>
-                <dd className="font-medium text-right">
-                  {merchant.address?.zipCode}<br />
-                  {merchant.address?.address1}<br />
-                  {merchant.address?.address2}
+                <dd className="font-medium">
+                  {merchant.address}
                 </dd>
               </div>
             </dl>
@@ -388,23 +329,45 @@ export default function MerchantDetailPage() {
             <dl className="space-y-2">
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">은행</dt>
-                <dd className="font-medium">{merchant.account?.bank}</dd>
+                <dd className="font-medium">{merchant.bankName}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">계좌번호</dt>
-                <dd className="font-medium">{merchant.account?.accountNumber}</dd>
+                <dd className="font-medium">{merchant.accountNumber}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">예금주</dt>
-                <dd className="font-medium">{merchant.account?.accountHolder}</dd>
+                <dd className="font-medium">{merchant.accountHolder}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">결제 수수료</dt>
-                <dd className="font-medium">{merchant.fees?.paymentFee}%</dd>
+                <dt className="text-muted-foreground">수수료율</dt>
+                <dd className="font-medium">{merchant.commissionRate}%</dd>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">계약 정보</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="space-y-2">
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">계약 시작일</dt>
+                <dd className="font-medium">{formatDate(merchant.contractStartDate)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">출금 수수료</dt>
-                <dd className="font-medium">{formatCurrency(Number(merchant.fees?.withdrawalFee))}원</dd>
+                <dt className="text-muted-foreground">계약 종료일</dt>
+                <dd className="font-medium">{formatDate(merchant.contractEndDate)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">등록일</dt>
+                <dd className="font-medium">{formatDate(merchant.registrationDate)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">최종 수정일</dt>
+                <dd className="font-medium">{formatDate(merchant.lastUpdated)}</dd>
               </div>
             </dl>
           </CardContent>

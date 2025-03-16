@@ -1,312 +1,396 @@
 /**
- * 가맹점 관리 API 클라이언트
+ * 가맹점 API 클라이언트
  */
 import { 
+  fetchApi, 
+  postApi, 
+  putApi, 
+  deleteApi, 
+  ApiResponse as BaseApiResponse, 
+  buildApiUrl, 
+  clearApiCache 
+} from '@/lib/api-client';
+import { 
   Merchant, 
-  MerchantsListResult, 
   MerchantSearchParams, 
-  ApiResponse,
-  ApiWarning
+  MerchantCreateParams, 
+  MerchantUpdateParams 
 } from '@/types/merchants';
-import { fetchApi, postApi, putApi, deleteApi } from '@/api/client';
+
+// 경고 메시지를 포함하는 확장된 API 응답 타입
+export interface ApiResponse<T = any> extends BaseApiResponse<T> {
+  warning?: string;
+}
+
+const API_BASE_URL = '/api/merchants';
+const MERCHANTS_CACHE_KEY = 'merchants_list';
 
 /**
- * 샘플 가맹점 데이터 생성
+ * 샘플 가맹점 데이터 생성 함수
  * @param count 생성할 가맹점 수
+ * @returns 샘플 가맹점 배열
  */
 export function generateSampleMerchants(count: number = 10): Merchant[] {
-  const statuses: ('active' | 'inactive' | 'pending')[] = ['active', 'inactive', 'pending'];
-  const banks = ['신한은행', '국민은행', '우리은행', '하나은행', '기업은행'];
+  const statuses: ('active' | 'inactive' | 'pending' | 'suspended')[] = ['active', 'inactive', 'pending', 'suspended'];
+  const businessTypes = ['개인', '법인', '프리랜서', '소상공인'];
+  const cities = ['서울', '부산', '인천', '대구', '광주', '대전', '울산', '세종'];
   
   return Array.from({ length: count }).map((_, index) => {
     const id = index + 1;
-    const now = new Date().toISOString();
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const businessType = businessTypes[Math.floor(Math.random() * businessTypes.length)];
+    const city = cities[Math.floor(Math.random() * cities.length)];
     
     return {
       id,
       name: `샘플 가맹점 ${id}`,
       businessNumber: `123-45-${67890 + id}`.substring(0, 12),
       representativeName: `대표자 ${id}`,
-      status: statuses[id % statuses.length],
-      email: `merchant${id}@example.com`,
-      phone: `010-1234-${5678 + id}`.substring(0, 13),
-      zipCode: `0${5000 + id}`.substring(0, 5),
-      address1: `서울시 강남구 테헤란로 ${123 + id}`,
-      address2: `${id}층 ${id}호`,
-      bank: banks[id % banks.length],
-      accountNumber: `110-123-${456789 + id}`.substring(0, 14),
+      phoneNumber: `010-1234-${5678 + id}`.substring(0, 13),
+      email: `sample${id}@example.com`,
+      address: `${city} 샘플구 테스트로 ${id}길 ${id * 10}`,
+      businessType,
+      status,
+      registrationDate: new Date(Date.now() - (id * 86400000)).toISOString(),
+      lastUpdated: new Date(Date.now() - (id * 43200000)).toISOString(),
+      contractStartDate: new Date(Date.now() - (id * 86400000 * 30)).toISOString(),
+      contractEndDate: new Date(Date.now() + (id * 86400000 * 30)).toISOString(),
+      commissionRate: (0.5 + (id % 10) / 10).toFixed(2),
+      bankName: '샘플은행',
+      accountNumber: `123-456-${7890 + id}`.substring(0, 14),
       accountHolder: `계좌주 ${id}`,
-      paymentFee: 3.5 + (id % 10) / 10,
-      withdrawalFee: 1000 + (id % 5) * 100,
-      createdAt: now,
-      updatedAt: now
+      memo: id % 3 === 0 ? `샘플 메모 ${id}` : undefined,
+      tags: id % 2 === 0 ? ['샘플', `태그${id}`] : undefined
     };
   });
 }
 
 /**
- * 가맹점 목록 조회
- * @param searchParams 검색 파라미터
+ * 가맹점 목록 조회 함수
+ * @param params 검색 파라미터
+ * @returns API 응답 (가맹점 목록 및 총 개수)
  */
-export async function fetchMerchants(searchParams?: MerchantSearchParams): Promise<ApiResponse<MerchantsListResult>> {
+export async function fetchMerchants(params?: MerchantSearchParams): Promise<ApiResponse<{
+  merchants: Merchant[],
+  totalCount: number
+}>> {
   try {
-    const response = await fetchApi<MerchantsListResult>('/api/merchants', searchParams);
+    // 캐시 키 생성 (검색 조건마다 다른 캐시 키 사용)
+    const cacheKey = params 
+      ? `${MERCHANTS_CACHE_KEY}_${JSON.stringify(params)}`
+      : MERCHANTS_CACHE_KEY;
     
-    // 오류 발생 시 샘플 데이터 생성 여부 확인
-    if (response.status === 'error' && response.error?.code === 'SP_NOT_FOUND') {
-      console.warn('가맹점 목록 조회 중 저장 프로시저 오류 발생, 샘플 데이터 생성');
+    // API URL 생성
+    const url = buildApiUrl(API_BASE_URL, params);
+    
+    // API 호출 (캐싱 사용)
+    const response = await fetchApi<{
+      merchants: Merchant[],
+      totalCount: number
+    }>(url, {
+      cacheKey,
+      cacheTTL: 60000, // 1분 캐시
+      showError: true,
+      errorMessage: '가맹점 목록을 불러오는 중 오류가 발생했습니다.'
+    });
+    
+    // 데이터베이스 오류 발생 시 샘플 데이터 반환
+    if (!response.success) {
+      console.warn('가맹점 데이터 조회 중 오류가 발생하여 샘플 데이터를 반환합니다.');
       
-      const sampleMerchants = generateSampleMerchants(20);
-      const page = searchParams?.page || 1;
-      const pageSize = searchParams?.pageSize || 10;
-      
-      // 페이지네이션 적용
+      const sampleData = generateSampleMerchants(20);
+      const filteredData = filterSampleData(sampleData, params);
+      const pageSize = params?.pageSize || 10;
+      const page = params?.page || 1;
       const startIndex = (page - 1) * pageSize;
       const endIndex = startIndex + pageSize;
-      const paginatedMerchants = sampleMerchants.slice(startIndex, endIndex);
-      
-      // 필터링 적용
-      let filteredMerchants = paginatedMerchants;
-      if (searchParams?.name) {
-        filteredMerchants = filteredMerchants.filter(m => 
-          m.name.toLowerCase().includes(searchParams.name!.toLowerCase())
-        );
-      }
-      if (searchParams?.businessNumber) {
-        filteredMerchants = filteredMerchants.filter(m => 
-          m.businessNumber.includes(searchParams.businessNumber!)
-        );
-      }
-      if (searchParams?.status) {
-        filteredMerchants = filteredMerchants.filter(m => 
-          m.status === searchParams.status
-        );
-      }
-      
-      const warning: ApiWarning = {
-        message: '데이터베이스 연결에 문제가 있어 샘플 데이터를 표시합니다.',
-        code: 'USING_SAMPLE_DATA',
-        originalError: response.error?.message
-      };
       
       return {
-        status: 'success',
+        success: true,
         data: {
-          merchants: filteredMerchants,
-          pagination: {
-            totalCount: sampleMerchants.length,
-            page,
-            pageSize,
-            totalPages: Math.ceil(sampleMerchants.length / pageSize)
-          }
+          merchants: filteredData.slice(startIndex, endIndex),
+          totalCount: filteredData.length
         },
-        warning
+        warning: '데이터베이스 연결 오류로 샘플 데이터를 표시합니다.'
       };
     }
     
     return response;
   } catch (error) {
     console.error('가맹점 목록 조회 중 오류 발생:', error);
-    throw error;
+    
+    // 오류 발생 시 샘플 데이터 반환
+    const sampleData = generateSampleMerchants(20);
+    const filteredData = filterSampleData(sampleData, params);
+    const pageSize = params?.pageSize || 10;
+    const page = params?.page || 1;
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    
+    return {
+      success: true,
+      data: {
+        merchants: filteredData.slice(startIndex, endIndex),
+        totalCount: filteredData.length
+      },
+      warning: '데이터베이스 연결 오류로 샘플 데이터를 표시합니다.'
+    };
   }
 }
 
 /**
- * 가맹점 상세 정보 조회
- * @param id 가맹점 ID
+ * 샘플 데이터 필터링 함수 (검색 조건에 맞게 필터링)
  */
-export async function fetchMerchantById(id: number): Promise<ApiResponse<Merchant>> {
-  try {
-    const response = await fetchApi<Merchant>(`/api/merchants/${id}`);
+function filterSampleData(data: Merchant[], params?: MerchantSearchParams): Merchant[] {
+  if (!params) return data;
+  
+  return data.filter(merchant => {
+    // 가맹점명 필터
+    if (params.name && !merchant.name.includes(params.name)) {
+      return false;
+    }
     
-    // 오류 발생 시 샘플 데이터 생성 여부 확인
-    if (response.status === 'error' && response.error?.code === 'SP_NOT_FOUND') {
-      console.warn(`가맹점 상세 정보 조회 중 저장 프로시저 오류 발생 (ID: ${id}), 샘플 데이터 생성`);
-      
-      const sampleMerchant = generateSampleMerchants(1)[0];
-      sampleMerchant.id = id;
-      
-      const warning: ApiWarning = {
-        message: '데이터베이스 연결에 문제가 있어 샘플 데이터를 표시합니다.',
-        code: 'USING_SAMPLE_DATA',
-        originalError: response.error?.message
+    // 사업자번호 필터
+    if (params.businessNumber && !merchant.businessNumber.includes(params.businessNumber)) {
+      return false;
+    }
+    
+    // 상태 필터
+    if (params.status && params.status !== 'all' && merchant.status !== params.status) {
+      return false;
+    }
+    
+    return true;
+  });
+}
+
+/**
+ * 가맹점 상세 조회 함수
+ * @param id 가맹점 ID
+ * @returns API 응답 (가맹점 정보)
+ */
+export async function fetchMerchantById(id: number | string): Promise<ApiResponse<Merchant>> {
+  try {
+    // ID 유효성 검사 강화
+    if (id === undefined || id === null || id === '') {
+      return {
+        success: false,
+        error: '가맹점 ID가 제공되지 않았습니다.'
       };
+    }
+    
+    // 문자열 ID를 숫자로 변환 시도
+    const merchantId = typeof id === 'string' ? parseInt(id) : id;
+    
+    // 숫자 ID 유효성 검사
+    if (isNaN(merchantId) || merchantId <= 0) {
+      return {
+        success: false,
+        error: '유효하지 않은 가맹점 ID입니다.'
+      };
+    }
+    
+    // 캐시 키 생성
+    const cacheKey = `merchant_${merchantId}`;
+    
+    // API 호출 (캐싱 사용)
+    const response = await fetchApi<Merchant>(`${API_BASE_URL}/${merchantId}`, {
+      cacheKey,
+      cacheTTL: 60000, // 1분 캐시
+      showError: true,
+      errorMessage: `가맹점 정보를 불러오는 중 오류가 발생했습니다. (ID: ${merchantId})`
+    });
+    
+    // 데이터베이스 오류 발생 시 샘플 데이터 반환
+    if (!response.success) {
+      console.warn(`가맹점 ID ${merchantId} 조회 중 오류가 발생하여 샘플 데이터를 반환합니다.`);
+      
+      const sampleData = generateSampleMerchants(merchantId)[0];
       
       return {
-        status: 'success',
-        data: sampleMerchant,
-        warning
+        success: true,
+        data: sampleData,
+        warning: '데이터베이스 연결 오류로 샘플 데이터를 표시합니다.'
       };
     }
     
     return response;
   } catch (error) {
-    console.error(`가맹점 상세 정보 조회 중 오류 발생 (ID: ${id}):`, error);
-    throw error;
+    console.error(`가맹점 ID ${id} 조회 중 오류 발생:`, error);
+    
+    // 오류 발생 시 샘플 데이터 반환
+    const merchantId = typeof id === 'string' ? parseInt(id) : id;
+    const sampleData = !isNaN(merchantId) && merchantId > 0 ? generateSampleMerchants(merchantId)[0] : generateSampleMerchants(1)[0];
+    
+    return {
+      success: true,
+      data: sampleData,
+      warning: '데이터베이스 연결 오류로 샘플 데이터를 표시합니다.'
+    };
   }
 }
 
 /**
- * 가맹점 등록
- * @param merchantData 가맹점 데이터
+ * 가맹점 등록 함수
+ * @param params 가맹점 등록 정보
+ * @returns API 응답
  */
-export async function createMerchant(merchantData: {
-  name: string;
-  businessNumber: string;
-  representativeName: string;
-  status: string;
-  email: string;
-  phone: string;
-  zipCode: string;
-  address1: string;
-  address2?: string;
-  bank: string;
-  accountNumber: string;
-  accountHolder: string;
-  paymentFee: string;
-  withdrawalFee: string;
-}): Promise<ApiResponse<{ id: number }>> {
+export async function createMerchant(params: MerchantCreateParams): Promise<ApiResponse<Merchant>> {
   try {
-    const response = await postApi<{ id: number }>('/api/merchants', merchantData);
+    const response = await postApi<Merchant>(API_BASE_URL, params, {
+      showSuccess: true,
+      successMessage: '가맹점이 성공적으로 등록되었습니다.',
+      showError: true,
+      errorMessage: '가맹점 등록 중 오류가 발생했습니다.'
+    });
     
-    // 오류 발생 시 샘플 응답 생성 여부 확인
-    if (response.status === 'error' && response.error?.code === 'SP_NOT_FOUND') {
-      console.warn('가맹점 등록 중 저장 프로시저 오류 발생, 샘플 응답 생성');
-      
-      const warning: ApiWarning = {
-        message: '데이터베이스 연결에 문제가 있어 가맹점이 실제로 등록되지 않았습니다.',
-        code: 'USING_SAMPLE_RESPONSE',
-        originalError: response.error?.message
-      };
-      
-      return {
-        status: 'success',
-        data: { id: Math.floor(Math.random() * 1000) + 1 },
-        warning
-      };
-    }
+    // 캐시 초기화 (목록 다시 불러오기 위함)
+    clearApiCache(MERCHANTS_CACHE_KEY);
     
     return response;
   } catch (error) {
     console.error('가맹점 등록 중 오류 발생:', error);
-    throw error;
+    
+    return {
+      success: false,
+      error: '가맹점 등록 중 오류가 발생했습니다.'
+    };
   }
 }
 
 /**
- * 가맹점 정보 수정
+ * 가맹점 정보 수정 함수
  * @param id 가맹점 ID
- * @param merchantData 가맹점 데이터
+ * @param params 수정할 가맹점 정보
+ * @returns API 응답
  */
-export async function updateMerchant(
-  id: number,
-  merchantData: {
-    name: string;
-    businessNumber: string;
-    representativeName: string;
-    status: string;
-    email: string;
-    phone: string;
-    zipCode: string;
-    address1: string;
-    address2?: string;
-    bank: string;
-    accountNumber: string;
-    accountHolder: string;
-    paymentFee: string;
-    withdrawalFee: string;
-  }
-): Promise<ApiResponse<{ success: boolean }>> {
+export async function updateMerchant(id: number | string, params: MerchantUpdateParams): Promise<ApiResponse<Merchant>> {
   try {
-    const response = await putApi<{ success: boolean }>(`/api/merchants/${id}`, merchantData);
-    
-    // 오류 발생 시 샘플 응답 생성 여부 확인
-    if (response.status === 'error' && response.error?.code === 'SP_NOT_FOUND') {
-      console.warn(`가맹점 정보 수정 중 저장 프로시저 오류 발생 (ID: ${id}), 샘플 응답 생성`);
-      
-      const warning: ApiWarning = {
-        message: '데이터베이스 연결에 문제가 있어 가맹점 정보가 실제로 수정되지 않았습니다.',
-        code: 'USING_SAMPLE_RESPONSE',
-        originalError: response.error?.message
-      };
-      
+    // ID 유효성 검사
+    if (id === undefined || id === null || id === '') {
       return {
-        status: 'success',
-        data: { success: true },
-        warning
+        success: false,
+        error: '가맹점 ID가 제공되지 않았습니다.'
       };
     }
     
+    const merchantId = typeof id === 'string' ? parseInt(id) : id;
+    
+    if (isNaN(merchantId) || merchantId <= 0) {
+      return {
+        success: false,
+        error: '유효하지 않은 가맹점 ID입니다.'
+      };
+    }
+    
+    const response = await putApi<Merchant>(`${API_BASE_URL}/${merchantId}`, params, {
+      showSuccess: true,
+      successMessage: '가맹점 정보가 성공적으로 수정되었습니다.',
+      showError: true,
+      errorMessage: '가맹점 정보 수정 중 오류가 발생했습니다.'
+    });
+    
+    // 캐시 초기화
+    clearApiCache(`merchant_${merchantId}`);
+    clearApiCache(MERCHANTS_CACHE_KEY);
+    
     return response;
   } catch (error) {
-    console.error(`가맹점 정보 수정 중 오류 발생 (ID: ${id}):`, error);
-    throw error;
+    console.error(`가맹점 ID ${id} 수정 중 오류 발생:`, error);
+    
+    return {
+      success: false,
+      error: '가맹점 정보 수정 중 오류가 발생했습니다.'
+    };
   }
 }
 
 /**
- * 가맹점 상태 변경
+ * 가맹점 삭제 함수
+ * @param id 가맹점 ID
+ * @returns API 응답
+ */
+export async function deleteMerchant(id: number | string): Promise<ApiResponse<void>> {
+  try {
+    // ID 유효성 검사
+    if (id === undefined || id === null || id === '') {
+      return {
+        success: false,
+        error: '가맹점 ID가 제공되지 않았습니다.'
+      };
+    }
+    
+    const merchantId = typeof id === 'string' ? parseInt(id) : id;
+    
+    if (isNaN(merchantId) || merchantId <= 0) {
+      return {
+        success: false,
+        error: '유효하지 않은 가맹점 ID입니다.'
+      };
+    }
+    
+    const response = await deleteApi<void>(`${API_BASE_URL}/${merchantId}`, {
+      showSuccess: true,
+      successMessage: '가맹점이 성공적으로 삭제되었습니다.',
+      showError: true,
+      errorMessage: '가맹점 삭제 중 오류가 발생했습니다.'
+    });
+    
+    // 캐시 초기화
+    clearApiCache(`merchant_${merchantId}`);
+    clearApiCache(MERCHANTS_CACHE_KEY);
+    
+    return response;
+  } catch (error) {
+    console.error(`가맹점 ID ${id} 삭제 중 오류 발생:`, error);
+    
+    return {
+      success: false,
+      error: '가맹점 삭제 중 오류가 발생했습니다.'
+    };
+  }
+}
+
+/**
+ * 가맹점 상태 변경 함수
  * @param id 가맹점 ID
  * @param status 변경할 상태
+ * @returns API 응답
  */
-export async function updateMerchantStatus(id: number, status: 'active' | 'inactive' | 'pending'): Promise<ApiResponse<{ success: boolean }>> {
+export async function updateMerchantStatus(
+  id: number | string, 
+  status: 'active' | 'inactive' | 'pending' | 'suspended'
+): Promise<ApiResponse<Merchant>> {
   try {
-    const response = await putApi<{ success: boolean }>(`/api/merchants/${id}/status`, { status });
+    const merchantId = typeof id === 'string' ? parseInt(id) : id;
     
-    // 오류 발생 시 샘플 응답 생성 여부 확인
-    if (response.status === 'error' && response.error?.code === 'SP_NOT_FOUND') {
-      console.warn(`가맹점 상태 변경 중 저장 프로시저 오류 발생 (ID: ${id}), 샘플 응답 생성`);
-      
-      const warning: ApiWarning = {
-        message: '데이터베이스 연결에 문제가 있어 가맹점 상태가 실제로 변경되지 않았습니다.',
-        code: 'USING_SAMPLE_RESPONSE',
-        originalError: response.error?.message
-      };
-      
-      return {
-        status: 'success',
-        data: { success: true },
-        warning
-      };
-    }
+    const response = await putApi<Merchant>(`${API_BASE_URL}/${merchantId}/status`, { status }, {
+      showSuccess: true,
+      successMessage: `가맹점 상태가 '${status}'로 변경되었습니다.`,
+      showError: true,
+      errorMessage: '가맹점 상태 변경 중 오류가 발생했습니다.'
+    });
+    
+    // 캐시 초기화
+    clearApiCache(`merchant_${merchantId}`);
+    clearApiCache(MERCHANTS_CACHE_KEY);
     
     return response;
   } catch (error) {
-    console.error(`가맹점 상태 변경 중 오류 발생 (ID: ${id}):`, error);
-    throw error;
+    console.error(`가맹점 ID ${id} 상태 변경 중 오류 발생:`, error);
+    
+    return {
+      success: false,
+      error: '가맹점 상태 변경 중 오류가 발생했습니다.'
+    };
   }
 }
 
 /**
- * 가맹점 삭제
- * @param id 가맹점 ID
+ * 가맹점 목록 캐시 초기화 함수
  */
-export async function deleteMerchant(id: number): Promise<ApiResponse<{ success: boolean }>> {
-  try {
-    const response = await deleteApi<{ success: boolean }>(`/api/merchants/${id}`);
-    
-    // 오류 발생 시 샘플 응답 생성 여부 확인
-    if (response.status === 'error' && response.error?.code === 'SP_NOT_FOUND') {
-      console.warn(`가맹점 삭제 중 저장 프로시저 오류 발생 (ID: ${id}), 샘플 응답 생성`);
-      
-      const warning: ApiWarning = {
-        message: '데이터베이스 연결에 문제가 있어 가맹점이 실제로 삭제되지 않았습니다.',
-        code: 'USING_SAMPLE_RESPONSE',
-        originalError: response.error?.message
-      };
-      
-      return {
-        status: 'success',
-        data: { success: true },
-        warning
-      };
-    }
-    
-    return response;
-  } catch (error) {
-    console.error(`가맹점 삭제 중 오류 발생 (ID: ${id}):`, error);
-    throw error;
-  }
+export function clearMerchantsCache(): void {
+  clearApiCache(MERCHANTS_CACHE_KEY);
 }
 
 export default {
@@ -314,7 +398,8 @@ export default {
   fetchMerchantById,
   createMerchant,
   updateMerchant,
-  updateMerchantStatus,
   deleteMerchant,
+  updateMerchantStatus,
+  clearMerchantsCache,
   generateSampleMerchants
 };

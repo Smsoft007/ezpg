@@ -1,18 +1,19 @@
 import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, RefreshCcw } from "lucide-react";
+import { Search, RotateCcw } from "lucide-react";
+import { MerchantSearchParams } from "@/types/merchants";
 
-interface MerchantSearchFormProps {
-  searchTerm: string;
-  onSearchChange: (value: string) => void;
+export interface MerchantSearchFormProps {
+  filters: MerchantSearchParams;
+  onFilterChange: (newFilters: Partial<MerchantSearchParams>) => void;
   onSearch: () => void;
   onReset: () => void;
 }
 
 export function MerchantSearchForm({ 
-  searchTerm, 
-  onSearchChange, 
+  filters, 
+  onFilterChange, 
   onSearch, 
   onReset 
 }: MerchantSearchFormProps) {
@@ -22,20 +23,44 @@ export function MerchantSearchForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full max-w-sm items-center space-x-2">
-      <Input
-        type="text"
-        placeholder="가맹점명 또는 사업자번호 검색"
-        value={searchTerm}
-        onChange={(e) => onSearchChange(e.target.value)}
-        className="flex-1"
-      />
-      <Button type="submit" size="icon">
-        <Search className="h-4 w-4" />
-      </Button>
-      <Button type="button" variant="outline" size="icon" onClick={onReset}>
-        <RefreshCcw className="h-4 w-4" />
-      </Button>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex-1">
+          <label htmlFor="name" className="text-sm font-medium mb-1 block">
+            가맹점명
+          </label>
+          <Input
+            id="name"
+            type="text"
+            placeholder="가맹점명 입력"
+            value={filters.name}
+            onChange={(e) => onFilterChange({ name: e.target.value })}
+          />
+        </div>
+        <div className="flex-1">
+          <label htmlFor="businessNumber" className="text-sm font-medium mb-1 block">
+            사업자번호
+          </label>
+          <Input
+            id="businessNumber"
+            type="text"
+            placeholder="사업자번호 입력 (예: 123-45-67890)"
+            value={filters.businessNumber}
+            onChange={(e) => onFilterChange({ businessNumber: e.target.value })}
+          />
+        </div>
+      </div>
+      
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onReset}>
+          <RotateCcw className="h-4 w-4 mr-2" />
+          초기화
+        </Button>
+        <Button type="submit">
+          <Search className="h-4 w-4 mr-2" />
+          검색
+        </Button>
+      </div>
     </form>
   );
 }

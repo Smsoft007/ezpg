@@ -89,7 +89,7 @@ export async function getMerchants(searchParams?: {
     console.log('가맹점 목록 조회 요청:', searchParams);
     
     try {
-      // 저장 프로시저 호출 시도
+      // 저장 프로시저 호출
       const result = await executeProcedure<any>('sp_GetMerchantList', {
         Name: searchParams?.name || null,
         BusinessNumber: searchParams?.businessNumber || null,
@@ -120,10 +120,10 @@ export async function getMerchants(searchParams?: {
         zipCode: row.ZipCode,
         address1: row.Address1,
         address2: row.Address2,
-        bank: row.BankName,
+        bank: row.BankName || row.Bank, // 필드명 차이를 수용
         accountNumber: row.AccountNumber,
         accountHolder: row.AccountHolder,
-        paymentFee: row.PaymentFeeRate,
+        paymentFee: row.PaymentFeeRate || row.PaymentFee, // 필드명 차이를 수용
         withdrawalFee: row.WithdrawalFee,
         createdAt: row.CreatedAt,
         updatedAt: row.UpdatedAt
@@ -139,87 +139,97 @@ export async function getMerchants(searchParams?: {
         }
       };
     } catch (dbError) {
-      console.error('저장 프로시저 호출 실패, 샘플 데이터 사용:', dbError);
+      console.error('저장 프로시저 호출 실패:', dbError);
+      console.warn('샘플 데이터를 사용합니다.');
       
-      // 저장 프로시저 호출 실패 시 샘플 데이터 반환
       // 샘플 데이터 생성
-      const sampleMerchants: Merchant[] = Array.from({ length: 15 }).map((_, index) => ({
-        id: index + 1,
-        name: `가맹점 ${index + 1}`,
-        businessNumber: `123-45-6789${index}`,
-        representativeName: `대표자 ${index + 1}`,
-        status: index % 3 === 0 ? 'active' : (index % 3 === 1 ? 'inactive' : 'pending'),
-        email: `merchant${index + 1}@example.com`,
-        phone: `010-1234-${5678 + index}`,
-        zipCode: '12345',
-        address1: '서울시 강남구 테헤란로',
-        address2: `${index + 1}층`,
-        bank: '국민은행',
-        accountNumber: `123-456-7890${index}`,
-        accountHolder: `홍길동${index + 1}`,
-        paymentFee: 3.5,
-        withdrawalFee: 1.0,
-        createdAt: new Date(2025, 0, index + 1).toISOString(),
-        updatedAt: new Date().toISOString()
-      }));
-      
-      // 필터링 로직
-      let filteredMerchants = [...sampleMerchants];
-      
-      if (searchParams?.name) {
-        filteredMerchants = filteredMerchants.filter(m => 
-          m.name.toLowerCase().includes(searchParams.name!.toLowerCase())
-        );
-      }
-      
-      if (searchParams?.businessNumber) {
-        filteredMerchants = filteredMerchants.filter(m => 
-          m.businessNumber.includes(searchParams.businessNumber!)
-        );
-      }
-      
-      if (searchParams?.status && searchParams.status !== 'all') {
-        filteredMerchants = filteredMerchants.filter(m => 
-          m.status === searchParams.status as any
-        );
-      }
-      
-      // 정렬
-      filteredMerchants.sort((a: any, b: any) => {
-        const aValue = a[sortColumn.toLowerCase()];
-        const bValue = b[sortColumn.toLowerCase()];
-        
-        if (typeof aValue === 'string') {
-          return sortOrder === 'asc' 
-            ? aValue.localeCompare(bValue) 
-            : bValue.localeCompare(aValue);
-        }
-        
-        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
-      });
-      
-      // 페이지네이션 적용
-      const totalCount = filteredMerchants.length;
-      const totalPages = Math.ceil(totalCount / pageSize);
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedMerchants = filteredMerchants.slice(startIndex, endIndex);
-      
-      // 임시 데이터 반환
-      return {
-        merchants: paginatedMerchants,
-        pagination: {
-          totalCount,
-          page,
-          pageSize,
-          totalPages
-        }
-      };
+      return generateSampleMerchantData(searchParams);
     }
   } catch (error) {
     console.error('가맹점 목록 조회 중 오류 발생:', error);
     throw error;
   }
+}
+
+/**
+ * 샘플 가맹점 데이터 생성
+ * @param searchParams 검색 파라미터
+ */
+function generateSampleMerchantData(searchParams?: {
+  name?: string;
+  businessNumber?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}): MerchantsListResult {
+  const page = searchParams?.page || 1;
+  const pageSize = searchParams?.pageSize || 10;
+  
+  // 샘플 데이터 생성 (20개)
+  const sampleData: Merchant[] = Array.from({ length: 20 }).map((_, index) => {
+    const id = index + 1;
+    const statuses: ('active' | 'inactive' | 'pending')[] = ['active', 'inactive', 'pending'];
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const banks = ['신한은행', '국민은행', '우리은행', '하나은행', '농협은행'];
+    const bank = banks[Math.floor(Math.random() * banks.length)];
+    
+    return {
+      id,
+      name: `샘플 가맹점 ${id}`,
+      businessNumber: `123-45-${67890 + id}`.substring(0, 12),
+      representativeName: `대표자 ${id}`,
+      status,
+      email: `merchant${id}@example.com`,
+      phone: `010-1234-${5678 + id}`.substring(0, 13),
+      zipCode: `0${id}${id}${id}${id}${id}`.substring(0, 5),
+      address1: `서울시 강남구 테스트로 ${id}길 ${id * 10}`,
+      address2: id % 3 === 0 ? `${id}층` : undefined,
+      bank,
+      accountNumber: `110-${id}${id}${id}-${id}${id}${id}${id}${id}`.substring(0, 14),
+      accountHolder: `홍길동${id}`,
+      paymentFee: 3.5 + (id % 10) / 10,
+      withdrawalFee: 1000 + (id * 100),
+      createdAt: new Date(2023, 0, id).toISOString(),
+      updatedAt: new Date(2023, 2, id).toISOString()
+    };
+  });
+  
+  // 검색 조건에 따른 필터링
+  let filteredData = [...sampleData];
+  
+  if (searchParams?.name) {
+    filteredData = filteredData.filter(item => 
+      item.name.toLowerCase().includes(searchParams.name!.toLowerCase())
+    );
+  }
+  
+  if (searchParams?.businessNumber) {
+    filteredData = filteredData.filter(item => 
+      item.businessNumber.includes(searchParams.businessNumber!)
+    );
+  }
+  
+  if (searchParams?.status && searchParams.status !== 'all') {
+    filteredData = filteredData.filter(item => 
+      item.status === searchParams.status
+    );
+  }
+  
+  // 페이지네이션 적용
+  const totalCount = filteredData.length;
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+  
+  return {
+    merchants: paginatedData,
+    pagination: {
+      totalCount,
+      page,
+      pageSize,
+      totalPages: Math.ceil(totalCount / pageSize)
+    }
+  };
 }
 
 /**

@@ -3,26 +3,39 @@
  */
 
 /**
+ * 가맹점 상태 타입
+ * 가맹점의 현재 상태를 나타내는 문자열 리터럴 타입입니다.
+ * - active: 활성 상태
+ * - inactive: 비활성 상태
+ * - pending: 대기 상태
+ * - suspended: 정지 상태
+ */
+export type MerchantStatus = 'active' | 'inactive' | 'pending' | 'suspended';
+
+/**
  * 가맹점 인터페이스
+ * 가맹점 정보를 나타내는 타입입니다.
  */
 export interface Merchant {
   id: number;
   name: string;
   businessNumber: string;
   representativeName: string;
-  status: 'active' | 'inactive' | 'pending';
+  phoneNumber: string;
   email: string;
-  phone: string;
-  zipCode: string;
-  address1: string;
-  address2?: string;
-  bank: string;
+  address: string;
+  businessType: string;
+  status: MerchantStatus;
+  registrationDate: string;
+  lastUpdated: string;
+  contractStartDate: string;
+  contractEndDate: string;
+  commissionRate: string;
+  bankName: string;
   accountNumber: string;
   accountHolder: string;
-  paymentFee: number;
-  withdrawalFee: number;
-  createdAt: string;
-  updatedAt: string;
+  memo?: string;
+  tags?: string[];
 }
 
 /**
@@ -96,7 +109,65 @@ export interface TransactionSearchParams {
 }
 
 /**
- * API 오류 인터페이스
+ * 가맹점 생성 파라미터 인터페이스
+ * 새 가맹점 등록 시 필요한 정보를 정의합니다.
+ */
+export interface MerchantCreateParams {
+  name: string;
+  businessNumber: string;
+  representativeName: string;
+  phoneNumber: string;
+  email: string;
+  address: string;
+  businessType: string;
+  status: 'active' | 'inactive' | 'pending' | 'suspended';
+  contractStartDate?: string;
+  contractEndDate?: string;
+  commissionRate?: string;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  memo?: string;
+  tags?: string[];
+}
+
+/**
+ * 가맹점 수정 파라미터 인터페이스
+ * 가맹점 정보 수정 시 필요한 정보를 정의합니다.
+ */
+export interface MerchantUpdateParams {
+  name?: string;
+  businessNumber?: string;
+  representativeName?: string;
+  phoneNumber?: string;
+  email?: string;
+  address?: string;
+  businessType?: string;
+  status?: 'active' | 'inactive' | 'pending' | 'suspended';
+  contractStartDate?: string;
+  contractEndDate?: string;
+  commissionRate?: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
+  memo?: string;
+  tags?: string[];
+}
+
+/**
+ * API 응답 인터페이스
+ * 모든 API 응답의 기본 구조를 정의합니다.
+ */
+export interface ApiResponse<T = any> {
+  status: 'success' | 'error';
+  data?: T;
+  error?: ApiError;
+  warning?: ApiWarning;
+}
+
+/**
+ * API 에러 인터페이스
+ * API 요청 중 발생한 에러 정보를 담습니다.
  */
 export interface ApiError {
   message: string;
@@ -106,20 +177,10 @@ export interface ApiError {
 
 /**
  * API 경고 인터페이스
+ * API 요청은 성공했지만 주의가 필요한 경우 경고 정보를 담습니다.
  */
 export interface ApiWarning {
   message: string;
-  code: string;
+  code?: string;
   originalError?: string;
-}
-
-/**
- * API 응답 인터페이스
- */
-export interface ApiResponse<T> {
-  status: 'success' | 'error';
-  data?: T;
-  error?: ApiError;
-  warning?: ApiWarning;
-  isLoading?: boolean;
 }

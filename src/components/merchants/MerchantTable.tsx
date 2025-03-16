@@ -97,7 +97,7 @@ export function MerchantTable({ merchants, isLoading = false }: MerchantTablePro
               <TableCell>
                 <MerchantStatusBadge status={merchant.status} />
               </TableCell>
-              <TableCell>{formatDate(merchant.createdAt)}</TableCell>
+              <TableCell>{formatDate(merchant.registrationDate)}</TableCell>
               <TableCell>
                 <div className="flex space-x-2">
                   <Link href={`/dashboard/merchants/${merchant.id}`}>

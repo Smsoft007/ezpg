@@ -77,29 +77,33 @@ export default function MerchantRegisterPage() {
     try {
       console.log("가맹점 등록 데이터:", data);
 
-      // 실제 API 호출은 아래와 같이 구현
-      // const response = await fetch("/api/merchants", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify(data),
-      // });
-      //
-      // if (!response.ok) {
-      //   throw new Error("가맹점 등록에 실패했습니다.");
-      // }
-      //
-      // const result = await response.json();
-
-      // 성공 시 목록 페이지로 이동
-      setTimeout(() => {
+      // API 호출
+      const response = await fetch("/api/merchants", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      
+      const result = await response.json();
+      
+      if (result.status === 'error') {
+        throw new Error(result.error?.message || "가맹점 등록에 실패했습니다.");
+      }
+      
+      // 경고 메시지가 있는 경우 표시
+      if (result.warning) {
+        alert(`가맹점이 등록되었으나 주의가 필요합니다: ${result.warning.message}`);
+      } else {
         alert("가맹점이 성공적으로 등록되었습니다.");
-        router.push("/dashboard/merchants");
-      }, 1000);
+      }
+      
+      // 성공 시 목록 페이지로 이동
+      router.push("/dashboard/merchants");
     } catch (error) {
       console.error("가맹점 등록 중 오류 발생:", error);
-      alert("가맹점 등록에 실패했습니다. 다시 시도해주세요.");
+      alert(error instanceof Error ? error.message : "가맹점 등록에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setIsSubmitting(false);
     }

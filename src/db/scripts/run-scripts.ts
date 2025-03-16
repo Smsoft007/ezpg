@@ -6,7 +6,7 @@ import path from 'path';
 import { executeQuery, getPool, closePool } from '@/db';
 
 // 스크립트 경로 설정
-const SCRIPTS_DIR = path.join(process.cwd(), 'src', 'db', 'procedures');
+const SCRIPTS_DIR = path.join(process.cwd(), 'src', 'db', 'scripts');
 
 /**
  * SQL 스크립트 파일을 실행합니다.
@@ -50,20 +50,27 @@ async function runAllScripts(directory: string, filePattern: RegExp = /\.sql$/):
     // 파일 목록 가져오기
     const files = fs.readdirSync(directory)
       .filter(file => filePattern.test(file))
-      .sort(); // 파일 이름 순으로 정렬
+      .sort(); // 파일명 기준으로 정렬
     
-    console.log(`실행할 스크립트 파일 (${files.length}개):`);
-    files.forEach(file => console.log(`- ${file}`));
+    if (files.length === 0) {
+      console.log(`${directory} 디렉토리에 실행할 SQL 스크립트가 없습니다.`);
+      return;
+    }
     
-    // 스크립트 순서 정의 (기본 테이블 스크립트가 먼저 실행되도록)
-    const orderedFiles = [
-      ...files.filter(file => file.includes('_base')),
-      ...files.filter(file => !file.includes('_base') && !file.includes('_sample_data')),
-      ...files.filter(file => file.includes('_sample_data'))
-    ];
+    console.log(`총 ${files.length}개의 스크립트 파일을 실행합니다...`);
     
-    // 스크립트 실행
-    for (const file of orderedFiles) {
+    // 테이블 생성 스크립트를 먼저 실행 (파일명이 create로 시작하는 파일)
+    const createTableScripts = files.filter(file => file.startsWith('create'));
+    const otherScripts = files.filter(file => !file.startsWith('create'));
+    
+    // 테이블 생성 스크립트 먼저 실행
+    for (const file of createTableScripts) {
+      const filePath = path.join(directory, file);
+      await runSqlScript(filePath);
+    }
+    
+    // 나머지 스크립트 실행
+    for (const file of otherScripts) {
       const filePath = path.join(directory, file);
       await runSqlScript(filePath);
     }
@@ -78,17 +85,19 @@ async function runAllScripts(directory: string, filePattern: RegExp = /\.sql$/):
 /**
  * 메인 함수
  */
-async function main() {
+async function main(): Promise<void> {
   try {
+    console.log('데이터베이스 스크립트 실행 시작...');
+    
     // 데이터베이스 연결
     await getPool();
     
-    // 모든 스크립트 실행
+    // 스크립트 실행
     await runAllScripts(SCRIPTS_DIR);
     
-    console.log('데이터베이스 스크립트 실행이 완료되었습니다.');
+    console.log('모든 데이터베이스 스크립트 실행 완료');
   } catch (error) {
-    console.error('스크립트 실행 중 오류가 발생했습니다:', error);
+    console.error('스크립트 실행 중 오류 발생:', error);
     process.exit(1);
   } finally {
     // 데이터베이스 연결 종료
